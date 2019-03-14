@@ -109,4 +109,70 @@ SELECT id
 | 2    | 88    | 3    | 3       | 2          |
 | 4    | 87    | 4    | 4       | 3          |
 
-3.
+3.某网站需要计算连续3天及3天以上登录该网站的用户id，现有表id, log_time，用户每天只会登录该网站一次。数据如下表。
+
+表1：t_log
+
+| id   | log_time |
+| ---- | -------- |
+| 1    | 20180304 |
+| 4    | 20180308 |
+| 4    | 20180309 |
+| 1    | 20180303 |
+| 1    | 20180305 |
+| 2    | 20180304 |
+| 2    | 20180307 |
+| 3    | 20180305 |
+| 4    | 20180307 |
+
+```sql
+方法1：
+SELECT  id
+  FROM
+      (
+      	SELECT id
+              ,log_time
+              ,count(id) over(partition by id order by log_time range BETWEEN 2 preceding and current row) rn
+         FROM t_log
+      )t 
+WHERE rn = 3
+GROUP BY id
+```
+
+```sql
+方法2：
+SELECT  id
+  FROM
+      (
+      	SELECT  id
+               ,log_time
+               ,lead(log_time,2) over(partition by id order by log_time) next_log_time
+          FROM  t_log
+      )t 
+  WHERE log_time = next_log_time-2
+  GROUP BY id
+```
+
+```sql
+方法3：
+select id
+  from 
+      (
+        select  id
+               ,(log_time - rn)  new_time
+               ,count(1)         log_cnt
+          from
+              (
+                select  id
+                       ,log_time
+                       ,row_number() over(partition by id order by log_time) rn
+                  from  t_log
+              )t 
+          group by id, (log_time-rn)
+      )t 
+ where log_cnt >= 3
+ group by id
+```
+
+方法分析：方法1比较简单，主要用了count() over()窗口函数，如果理解了over()中 range between and 的含义，这道题就能理解了，建议多尝试几次，看看中间结果；方法2在理解上比较简单，主要使用了lead() over()函数获取之后的第二次登录时间next_log_time，在比较next_log_time减2是否和log_time相等；方法3比较巧妙，它的精髓主要在于如果是连续登录，那么对于用户来说log_time-rn 将是相同的值，那么只需要count(uid)>=3即可。
+
