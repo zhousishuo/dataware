@@ -174,5 +174,56 @@ select id
  group by id
 ```
 
-方法分析：方法1比较简单，主要用了count() over()窗口函数，如果理解了over()中 range between and 的含义，这道题就能理解了，建议多尝试几次，看看中间结果；方法2在理解上比较简单，主要使用了lead() over()函数获取之后的第二次登录时间next_log_time，在比较next_log_time减2是否和log_time相等；方法3比较巧妙，它的精髓主要在于如果是连续登录，那么对于用户来说log_time-rn 将是相同的值，那么只需要count(uid)>=3即可。
+方法分析：方法1比较简单，主要用了count() over()窗口函数，如果理解了over()中 range between and 的含义，这道题就能理解了，建议多尝试几次，看看中间结果；方法2在理解上比较简单，主要使用了lead() over()函数获取之后的第二次登录时间next_log_time，在比较next_log_time减2是否和log_time相等；方法3比较巧妙，它的精髓主要在于如果是连续登录，那么对于用户来说log_time-rn 将是相同的值，那么只需要count(id)>=3即可。
+
+4.现有一张学生体育成绩分数表，学生可以多次测试，现有成绩如表t_score，现将学生的多次成绩变成一列，并将成绩进行排序，结果如表t_new。
+
+表t_score
+
+| id   | score |
+| ---- | ----- |
+| 1    | 90    |
+| 1    | 80    |
+| 1    | 90    |
+| 2    | 90    |
+| 2    | 88    |
+
+表t_new
+
+| id   | score      |
+| ---- | ---------- |
+| 1    | [80,80,90] |
+| 2    | [88,90]    |
+
+```sql
+select  id
+       ,sort_array(collect_list(score))  score
+  from  t_score
+  group by id
+```
+
+如果想去掉重复的得分，比如id = 1的学生，两次得分重复了，想要将score变成[80,90]，那么可以使用collect_set()函数
+
+```sql
+select  id
+       ,sort_array(collect_set(score))  score
+  from  t_score
+  group by id
+```
+
+结果如下：
+
+| id   | score   |
+| ---- | ------- |
+| 1    | [80,90] |
+| 2    | [88,90] |
+
+注意点：collect_set()和collect_list() 的返回类型是array，也就是返回的是数组类型，如果需要将结果存储到一张表t_new里，建表语句中score是string类型，那么直接存储就会报错，因为array类型不能直接转换成string，可以使用concat_ws()转一下，因为concat_ws(string SEP, array<string>)返回值类型是string
+
+```sql
+select  id
+       ,concat_ws(',', collect_list(cast(score as STRING)))
+  from  t_score
+  group by id
+```
 
