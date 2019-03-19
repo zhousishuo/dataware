@@ -176,7 +176,7 @@ select id
 
 方法分析：方法1比较简单，主要用了count() over()窗口函数，如果理解了over()中 range between and 的含义，这道题就能理解了，建议多尝试几次，看看中间结果；方法2在理解上比较简单，主要使用了lead() over()函数获取之后的第二次登录时间next_log_time，在比较next_log_time减2是否和log_time相等；方法3比较巧妙，它的精髓主要在于如果是连续登录，那么对于用户来说log_time-rn 将是相同的值，那么只需要count(id)>=3即可。
 
-4.现有一张学生体育成绩分数表，学生可以多次测试，现有成绩如表t_score，现将学生的多次成绩变成一列，并将成绩进行排序，结果如表t_new。
+4.大学里学生进行体育成绩测试，规定学生可以测试一次或多次，学生每次体育成绩记录在表t_score，现需要将学生的多次成绩变成一列，并将成绩进行排序，结果如表t_new。
 
 表t_score
 
@@ -218,7 +218,7 @@ select  id
 | 1    | [80,90] |
 | 2    | [88,90] |
 
-注意点：collect_set()和collect_list() 的返回类型是array，也就是返回的是数组类型，如果需要将结果存储到一张表t_new里，建表语句中score是string类型，那么直接存储就会报错，因为array类型不能直接转换成string，可以使用concat_ws()转一下，因为concat_ws(string SEP, array<string>)返回值类型是string
+注意：collect_set()和collect_list() 的返回类型是array，也就是返回的是数组类型，如果需要将结果存储到一张表t_new里，建表语句中score是string类型，那么直接存储就会报错，因为array类型不能直接转换成string，可以使用concat_ws()转一下，因为concat_ws(string SEP, array<string>)返回值类型是string，实现逻辑如下。
 
 ```sql
 select  id
