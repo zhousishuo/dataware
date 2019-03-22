@@ -227,3 +227,59 @@ select  id
   group by id
 ```
 
+5.有一张天气表Weather，需要找出今天相比于昨天温度更高的日期的Id。
+
+表Weather
+
+| id(BIGINT) | record_date(STRING) | temperature(BIGINT) |
+| ---------- | ------------------- | ------------------- |
+| 1          | 2019-03-01          | 10                  |
+| 2          | 2019-03-02          | 25                  |
+| 3          | 2019-03-03          | 20                  |
+| 4          | 2019-03-04          | 30                  |
+| 5          | 2019-03-06          | 40                  |
+
+符合条件的Id如下：
+
+| id   |
+| ---- |
+| 2    |
+| 4    |
+
+```sql
+方法一：使用lag()函数来实现
+select id
+  from
+      (
+      	select  id
+      	       ,record_date
+      	       ,temperature
+               ,lag(temperature) over(order by record_date) temperature_front
+               ,lag(record_date) over(order by record_date) record_date_front
+          from Weather
+      )t 
+  where temperature > temperature_front
+  and date_sub(record_date,1) = record_date_front
+```
+
+```sql
+方法二：使用Join的方式，Join的时候on后面的条件只能用来判断相等的情况，不能用来判断大于小于这种情况，这种判断需要放在where条件中。
+select  t1.id
+  from
+      (
+      	select  id
+               ,record_date
+               ,temperature
+          from Weather
+      )t1 
+ inner join
+      (
+      	select  record_date
+               ,temperature
+          from Weather
+      )t2 
+    on date_sub(t1.record_date,1) = t2.record_date
+ where t1.temperature > t2.temperature
+;
+```
+
